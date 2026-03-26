@@ -209,8 +209,11 @@ class NeocontrolOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_edit_shutter(self, user_input=None):
         """Select a shutter to edit."""
         if user_input is not None:
-            self._editing_name = user_input["name"]
-            return await self.async_step_edit_shutter_form()
+            # Use index for safer lookup
+            shutter_names = [s[CONF_NAME] for s in self.shutters]
+            if user_input["name"] in shutter_names:
+                self._editing_index = shutter_names.index(user_input["name"])
+                return await self.async_step_edit_shutter_form()
 
         shutter_names = [s[CONF_NAME] for s in self.shutters]
         return self.async_show_form(
@@ -222,15 +225,19 @@ class NeocontrolOptionsFlowHandler(config_entries.OptionsFlow):
 
     async def async_step_edit_shutter_form(self, user_input=None):
         """Edit the selected shutter's details."""
-        shutter = next((s for s in self.shutters if s[CONF_NAME] == self._editing_name), None)
+        if self._editing_index is None or self._editing_index >= len(self.shutters):
+            return await self.async_step_user()
+            
+        shutter = self.shutters[self._editing_index]
         
         if user_input is not None:
             # Update the shutter in the list
-            if shutter:
-                shutter[CONF_NAME] = user_input[CONF_NAME]
-                shutter[CONF_PAYLOAD_OPEN] = user_input[CONF_PAYLOAD_OPEN]
-                shutter[CONF_PAYLOAD_CLOSE] = user_input[CONF_PAYLOAD_CLOSE]
-                shutter[CONF_PAYLOAD_STOP] = user_input.get(CONF_PAYLOAD_STOP, "")
+            self.shutters[self._editing_index] = {
+                CONF_NAME: user_input[CONF_NAME],
+                CONF_PAYLOAD_OPEN: user_input[CONF_PAYLOAD_OPEN],
+                CONF_PAYLOAD_CLOSE: user_input[CONF_PAYLOAD_CLOSE],
+                CONF_PAYLOAD_STOP: user_input.get(CONF_PAYLOAD_STOP, ""),
+            }
             return await self.async_step_user()
 
         return self.async_show_form(
