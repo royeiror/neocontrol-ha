@@ -69,11 +69,11 @@
             "edit_shutter": {
                 "title": "Select Shutter to Edit",
                 "data": {
-                    "name": "Shutter Name"
+                    "name": "Select Shutter"
                 }
             },
             "edit_shutter_form": {
-                "title": "Edit Shutter Details",
+                "title": "Edit Shutter",
                 "description": "{test_result}",
                 "data": {
                     "name": "Shutter Name",
@@ -86,12 +86,12 @@
             "remove_shutter": {
                 "title": "Remove Shutter",
                 "data": {
-                    "name": "Select shutter to remove"
+                    "name": "Select Shutter to Remove"
                 }
             },
             "finish": {
                 "title": "Save Changes",
-                "description": "Click Submit to save and reload the integration."
+                "description": "Click Submit to finalize changes and reload the gateway."
             }
         }
     }
