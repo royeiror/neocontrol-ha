@@ -17,12 +17,13 @@
             },
             "shutter": {
                 "title": "Add a Shutter",
-                "description": "Enter the details for Shutter #{count}.",
+                "description": "{test_result}\nEnter the hex payloads for your shutter commands.",
                 "data": {
                     "name": "Shutter Name",
                     "payload_open": "Hex Payload for OPEN",
                     "payload_close": "Hex Payload for CLOSE",
-                    "payload_stop": "Hex Payload for STOP (Optional)"
+                    "payload_stop": "Hex Payload for STOP (Optional)",
+                    "test_action": "🔍 Action (Test or Save)"
                 }
             },
             "add_another": {
@@ -52,11 +53,13 @@
         "step": {
             "add_shutter": {
                 "title": "Add New Shutter",
+                "description": "{test_result}",
                 "data": {
                     "name": "Shutter Name",
                     "payload_open": "Hex Payload for OPEN",
                     "payload_close": "Hex Payload for CLOSE",
-                    "payload_stop": "Hex Payload for STOP (Optional)"
+                    "payload_stop": "Hex Payload for STOP (Optional)",
+                    "test_action": "🔍 Action (Test or Save)"
                 }
             },
             "edit_shutter": {
@@ -67,11 +70,13 @@
             },
             "edit_shutter_form": {
                 "title": "Edit Shutter Details",
+                "description": "{test_result}",
                 "data": {
                     "name": "Shutter Name",
                     "payload_open": "Hex Payload for OPEN",
                     "payload_close": "Hex Payload for CLOSE",
-                    "payload_stop": "Hex Payload for STOP (Optional)"
+                    "payload_stop": "Hex Payload for STOP (Optional)",
+                    "test_action": "🔍 Action (Test or Save)"
                 }
             },
             "remove_shutter": {

@@ -12,6 +12,7 @@ from .const import (
     CONF_PAYLOAD_CLOSE,
     CONF_PAYLOAD_STOP,
 )
+from .client import NeocontrolClient
 
 class NeocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Neocontrol."""
@@ -87,8 +88,33 @@ class NeocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_shutter(self, user_input=None):
         """Handle adding shutters."""
         errors = {}
+        description_placeholders = {"test_result": ""}
+        
         if user_input is not None:
-            # Add the current shutter to the list
+            # Handle Test Action
+            test_action = user_input.get("test_action", "save")
+            if test_action != "save":
+                mac = self.data[CONF_BOX_MAC]
+                client = NeocontrolClient(mac)
+                payload = ""
+                if test_action == "test_open": payload = user_input[CONF_PAYLOAD_OPEN]
+                elif test_action == "test_close": payload = user_input[CONF_PAYLOAD_CLOSE]
+                elif test_action == "test_stop": payload = user_input.get(CONF_PAYLOAD_STOP, "")
+                
+                if payload:
+                    client.send_command(payload)
+                    description_placeholders["test_result"] = f"✅ Test command sent! Check your shutter."
+                else:
+                    description_placeholders["test_result"] = "⚠️ No payload entered for this action."
+                
+                return self.async_show_form(
+                    step_id="shutter",
+                    data_schema=self._get_shutter_schema(user_input),
+                    description_placeholders=description_placeholders,
+                    errors=errors,
+                )
+
+            # SAVE
             shutter = {
                 CONF_NAME: user_input[CONF_NAME],
                 CONF_PAYLOAD_OPEN: user_input[CONF_PAYLOAD_OPEN],
@@ -96,23 +122,30 @@ class NeocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_PAYLOAD_STOP: user_input.get(CONF_PAYLOAD_STOP, ""),
             }
             self.shutters.append(shutter)
-            
-            # After adding, ask if they want to add another or finish
             return await self.async_step_add_another()
 
         return self.async_show_form(
             step_id="shutter",
-            data_schema=vol.Schema({
-                vol.Required(CONF_NAME): str,
-                vol.Required(CONF_PAYLOAD_OPEN): str,
-                vol.Required(CONF_PAYLOAD_CLOSE): str,
-                vol.Optional(CONF_PAYLOAD_STOP): str,
-            }),
-            description_placeholders={
-                "count": str(len(self.shutters))
-            },
+            data_schema=self._get_shutter_schema(),
+            description_placeholders=description_placeholders,
             errors=errors,
         )
+
+    def _get_shutter_schema(self, defaults=None):
+        """Helper to build shutter schema with test actions."""
+        if defaults is None: defaults = {}
+        return vol.Schema({
+            vol.Required(CONF_NAME, default=defaults.get(CONF_NAME, "")): str,
+            vol.Required(CONF_PAYLOAD_OPEN, default=defaults.get(CONF_PAYLOAD_OPEN, "")): str,
+            vol.Required(CONF_PAYLOAD_CLOSE, default=defaults.get(CONF_PAYLOAD_CLOSE, "")): str,
+            vol.Optional(CONF_PAYLOAD_STOP, default=defaults.get(CONF_PAYLOAD_STOP, "")): str,
+            vol.Required("test_action", default="save"): vol.In({
+                "save": "💾 CONFIRM and Save Shutter",
+                "test_open": "🔼 TEST Open Command",
+                "test_close": "🔽 TEST Close Command",
+                "test_stop": "⏹️ TEST Stop Command",
+            }),
+        })
 
     async def async_step_add_another(self, user_input=None):
         """Step to ask if we should add another shutter."""
@@ -122,7 +155,6 @@ class NeocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             
             # Finalize: Check if we are UPDATING an existing entry or CREATING a new one
             mac = self.data[CONF_BOX_MAC]
-            # Use unique_id search for more robustness
             existing_entry = next(
                 (e for e in self.hass.config_entries.async_entries(DOMAIN) if e.unique_id == mac), 
                 None
@@ -136,7 +168,7 @@ class NeocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 new_data = dict(existing_entry.data)
                 new_data[CONF_SHUTTERS] = current_shutters
                 
-                # Update and reload to ensure new entities appear
+                # Update and reload
                 self.hass.config_entries.async_update_entry(existing_entry, data=new_data)
                 await self.hass.config_entries.async_reload(existing_entry.entry_id)
                 return self.async_abort(reason="reconfigure_successful")
@@ -172,6 +204,7 @@ class NeocontrolOptionsFlowHandler(config_entries.OptionsFlow):
         self.config_entry = config_entry
         self.data = dict(config_entry.data)
         self.shutters = list(self.data.get(CONF_SHUTTERS, []))
+        self._editing_index = None
 
     async def async_step_init(self, user_input=None):
         """Manage the options."""
@@ -186,7 +219,24 @@ class NeocontrolOptionsFlowHandler(config_entries.OptionsFlow):
 
     async def async_step_add_shutter(self, user_input=None):
         """Add a new shutter."""
+        description_placeholders = {"test_result": ""}
         if user_input is not None:
+            test_action = user_input.get("test_action", "save")
+            if test_action != "save":
+                # Test logic
+                mac = self.data[CONF_BOX_MAC]
+                client = NeocontrolClient(mac)
+                payload = user_input.get(CONF_PAYLOAD_OPEN if test_action == "test_open" else CONF_PAYLOAD_CLOSE)
+                if test_action == "test_stop": payload = user_input.get(CONF_PAYLOAD_STOP)
+                if payload:
+                    client.send_command(payload)
+                    description_placeholders["test_result"] = "✅ Test command sent!"
+                return self.async_show_form(
+                    step_id="add_shutter",
+                    data_schema=self._get_shutter_schema(user_input),
+                    description_placeholders=description_placeholders,
+                )
+
             shutter = {
                 CONF_NAME: user_input[CONF_NAME],
                 CONF_PAYLOAD_OPEN: user_input[CONF_PAYLOAD_OPEN],
@@ -198,13 +248,25 @@ class NeocontrolOptionsFlowHandler(config_entries.OptionsFlow):
 
         return self.async_show_form(
             step_id="add_shutter",
-            data_schema=vol.Schema({
-                vol.Required(CONF_NAME): str,
-                vol.Required(CONF_PAYLOAD_OPEN): str,
-                vol.Required(CONF_PAYLOAD_CLOSE): str,
-                vol.Optional(CONF_PAYLOAD_STOP): str,
-            }),
+            data_schema=self._get_shutter_schema(),
+            description_placeholders=description_placeholders,
         )
+
+    def _get_shutter_schema(self, defaults=None):
+        """Helper to build shutter schema with test actions (Options Flow)."""
+        if defaults is None: defaults = {}
+        return vol.Schema({
+            vol.Required(CONF_NAME, default=defaults.get(CONF_NAME, "")): str,
+            vol.Required(CONF_PAYLOAD_OPEN, default=defaults.get(CONF_PAYLOAD_OPEN, "")): str,
+            vol.Required(CONF_PAYLOAD_CLOSE, default=defaults.get(CONF_PAYLOAD_CLOSE, "")): str,
+            vol.Optional(CONF_PAYLOAD_STOP, default=defaults.get(CONF_PAYLOAD_STOP, "")): str,
+            vol.Required("test_action", default="save"): vol.In({
+                "save": "💾 CONFIRM and Save Shutter",
+                "test_open": "🔼 TEST Open Command",
+                "test_close": "🔽 TEST Close Command",
+                "test_stop": "⏹️ TEST Stop Command",
+            }),
+        })
 
     async def async_step_edit_shutter(self, user_input=None):
         """Select a shutter to edit."""
@@ -229,8 +291,25 @@ class NeocontrolOptionsFlowHandler(config_entries.OptionsFlow):
             return await self.async_step_user()
             
         shutter = self.shutters[self._editing_index]
+        description_placeholders = {"test_result": ""}
         
         if user_input is not None:
+            test_action = user_input.get("test_action", "save")
+            if test_action != "save":
+                # Test logic
+                mac = self.data[CONF_BOX_MAC]
+                client = NeocontrolClient(mac)
+                payload = user_input.get(CONF_PAYLOAD_OPEN if test_action == "test_open" else CONF_PAYLOAD_CLOSE)
+                if test_action == "test_stop": payload = user_input.get(CONF_PAYLOAD_STOP)
+                if payload:
+                    client.send_command(payload)
+                    description_placeholders["test_result"] = "✅ Test command sent!"
+                return self.async_show_form(
+                    step_id="edit_shutter_form",
+                    data_schema=self._get_shutter_schema(user_input),
+                    description_placeholders=description_placeholders,
+                )
+
             # Update the shutter in the list
             self.shutters[self._editing_index] = {
                 CONF_NAME: user_input[CONF_NAME],
@@ -242,12 +321,8 @@ class NeocontrolOptionsFlowHandler(config_entries.OptionsFlow):
 
         return self.async_show_form(
             step_id="edit_shutter_form",
-            data_schema=vol.Schema({
-                vol.Required(CONF_NAME, default=shutter[CONF_NAME]): str,
-                vol.Required(CONF_PAYLOAD_OPEN, default=shutter[CONF_PAYLOAD_OPEN]): str,
-                vol.Required(CONF_PAYLOAD_CLOSE, default=shutter[CONF_PAYLOAD_CLOSE]): str,
-                vol.Optional(CONF_PAYLOAD_STOP, default=shutter.get(CONF_PAYLOAD_STOP, "")): str,
-            }),
+            data_schema=self._get_shutter_schema(shutter),
+            description_placeholders=description_placeholders,
         )
 
     async def async_step_remove_shutter(self, user_input=None):
