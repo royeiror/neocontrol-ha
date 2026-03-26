@@ -46,9 +46,6 @@ class NeocontrolShutter(CoverEntity):
         self._attr_icon = "mdi:window-shutter"
         self._attr_name = self._name
         self._attr_unique_id = f"{self._client.box_mac}_{self._name}"
-        
-        # Internal state
-        self._is_closed: bool | None = None
 
     async def async_added_to_hass(self):
         """Register callbacks."""
@@ -57,37 +54,27 @@ class NeocontrolShutter(CoverEntity):
     def _handle_binary_feedback(self, data: bytes):
         """
         Process binary feedback from the gateway.
-        We look for our specific payloads or generic status updates.
+        We can log this for debugging, but we don't track state anymore to keep buttons active.
         """
         if len(data) < 28:
             return
 
-        # 1. Simple check: Does the incoming data match our Open or Close hex exactly?
-        # (This handles the case where the gateway echoes back our command)
-        
-        # We need to be careful with the sequence number (offset 16) when comparing
-        # Let's compare parts before and after the sequence number byte
         def matches_template(template_hex: str, received_data: bytes) -> bool:
             try:
                 temp_bin = self._client.format_payload(template_hex)
-                # Compare skiping the sequence number at byte 16
                 return temp_bin[:16] == received_data[:16] and temp_bin[17:] == received_data[17:]
             except Exception:
                 return False
 
         if matches_template(self._payload_open, data):
-            self._is_closed = False
-            _LOGGER.debug("%s: Feedback confirms state is OPEN", self._name)
+            _LOGGER.debug("%s: Received OPEN feedback (Log Only)", self._name)
         elif matches_template(self._payload_close, data):
-            self._is_closed = True
-            _LOGGER.debug("%s: Feedback confirms state is CLOSED", self._name)
-        
-        self.schedule_update_ha_state()
+            _LOGGER.debug("%s: Received CLOSE feedback (Log Only)", self._name)
 
     @property
     def is_closed(self):
-        """Return True if the cover is closed. None means unknown."""
-        return self._is_closed
+        """Always return None (Unknown) so Open/Close buttons are always active."""
+        return None
 
     @property
     def supported_features(self):
@@ -105,14 +92,12 @@ class NeocontrolShutter(CoverEntity):
     def open_cover(self, **kwargs):
         """Open the cover."""
         _LOGGER.info("Opening cover %s", self._name)
-        self._is_closed = False # Optimistic
         self._client.send_command(self._payload_open)
         self.schedule_update_ha_state()
 
     def close_cover(self, **kwargs):
         """Close the cover."""
         _LOGGER.info("Closing cover %s", self._name)
-        self._is_closed = True # Optimistic
         self._client.send_command(self._payload_close)
         self.schedule_update_ha_state()
 
@@ -122,6 +107,4 @@ class NeocontrolShutter(CoverEntity):
             return
         _LOGGER.info("Stopping cover %s", self._name)
         self._client.send_command(self._payload_stop)
-        # We don't know the state after a stop
-        self._is_closed = None 
         self.schedule_update_ha_state()
