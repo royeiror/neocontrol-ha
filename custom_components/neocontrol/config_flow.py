@@ -31,25 +31,35 @@ class NeocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             # 1. Did the user select an existing gateway from the dropdown?
             existing_gateway = user_input.get("existing_gateway", "new")
+            
             if existing_gateway != "new":
-                return self.async_abort(
-                    reason="already_configured", 
-                    description_placeholders={"mac": existing_gateway}
-                )
-
-            # 2. Process a new MAC address
-            mac_input = user_input.get(CONF_BOX_MAC)
-            if not mac_input:
-                errors[CONF_BOX_MAC] = "no_mac"
+                mac = existing_gateway
             else:
+                # 2. Process a new MAC address
+                mac_input = user_input.get(CONF_BOX_MAC)
+                if not mac_input:
+                    errors[CONF_BOX_MAC] = "no_mac"
+                    return self.async_show_form(
+                        step_id="user",
+                        data_schema=vol.Schema(fields),
+                        errors=errors,
+                    )
                 mac = mac_input.replace(":", "").replace("-", "").upper()
                 if len(mac) != 12:
                     errors[CONF_BOX_MAC] = "invalid_mac"
-                else:
-                    await self.async_set_unique_id(mac)
-                    self._abort_if_unique_id_configured()
-                    self.data[CONF_BOX_MAC] = mac
-                    return await self.async_step_shutter()
+                    return self.async_show_form(
+                        step_id="user",
+                        data_schema=vol.Schema(fields),
+                        errors=errors,
+                    )
+            
+            # Successfully got a MAC. Store it and proceed.
+            self.data[CONF_BOX_MAC] = mac
+            
+            # Check if this MAC is already configured (for later logic)
+            await self.async_set_unique_id(mac)
+            
+            return await self.async_step_shutter()
 
         # Build schema
         fields = {}
@@ -104,7 +114,22 @@ class NeocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if user_input["add_another"]:
                 return await self.async_step_shutter()
             
-            # Finalize
+            # Finalize: Check if we are UPDATING an existing entry or CREATING a new one
+            mac = self.data[CONF_BOX_MAC]
+            existing_entry = self.hass.config_entries.async_get_entry(self.unique_id)
+            
+            if existing_entry:
+                # UPDATE: Append new shutters to the existing list
+                current_shutters = list(existing_entry.data.get(CONF_SHUTTERS, []))
+                current_shutters.extend(self.shutters)
+                
+                new_data = dict(existing_entry.data)
+                new_data[CONF_SHUTTERS] = current_shutters
+                
+                self.hass.config_entries.async_update_entry(existing_entry, data=new_data)
+                return self.async_abort(reason="reconfigure_successful")
+            
+            # CREATE NEW
             self.data[CONF_SHUTTERS] = self.shutters
             return self.async_create_entry(
                 title=f"Neocontrol ({self.data[CONF_BOX_MAC]})",

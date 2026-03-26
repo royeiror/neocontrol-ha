@@ -31,7 +31,8 @@
             "no_shutters": "You must add at least one shutter before clicking Done."
         },
         "abort": {
-            "already_configured": "The gateway {mac} is already configured. To add or remove shutters, please click on 'CONFIGURE' on the existing Neocontrol integration card."
+            "already_configured": "The gateway {mac} is already configured. To add or remove shutters, please click on 'CONFIGURE' on the existing Neocontrol integration card.",
+            "reconfigure_successful": "Successfully updated the existing gateway with your new shutters! No duplicate entries were created."
         }
     },
     "options": {
