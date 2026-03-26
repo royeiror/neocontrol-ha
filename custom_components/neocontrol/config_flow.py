@@ -122,7 +122,11 @@ class NeocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             
             # Finalize: Check if we are UPDATING an existing entry or CREATING a new one
             mac = self.data[CONF_BOX_MAC]
-            existing_entry = self.hass.config_entries.async_get_entry(self.unique_id)
+            # Use unique_id search for more robustness
+            existing_entry = next(
+                (e for e in self.hass.config_entries.async_entries(DOMAIN) if e.unique_id == mac), 
+                None
+            )
             
             if existing_entry:
                 # UPDATE: Append new shutters to the existing list
@@ -132,7 +136,9 @@ class NeocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 new_data = dict(existing_entry.data)
                 new_data[CONF_SHUTTERS] = current_shutters
                 
+                # Update and reload to ensure new entities appear
                 self.hass.config_entries.async_update_entry(existing_entry, data=new_data)
+                await self.hass.config_entries.async_reload(existing_entry.entry_id)
                 return self.async_abort(reason="reconfigure_successful")
             
             # CREATE NEW
