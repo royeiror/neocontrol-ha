@@ -38,12 +38,20 @@ This integration supports both **Local LAN control** and **Cloud MQTT control** 
    - *Tip: Use [MQTT X](https://mqttx.app/) to sniff these codes from your phone app.*
 
 ## 🛠️ Advanced: Sniffing Hex Payloads
-To find your shutter codes:
-1. Connect **MQTT X** to `iot.neocontrolglobal.com:9420`.
-2. Use credentials: `NM8Y6tUQ9SZcp6bx` / `LFuBH4hsVnbBC98n` (SSL enabled).
-3. Subscribe to `neo/conn/+/app`.
-4. Press a button in the **inteO** app and copy the **Hex** message.
-   - Example: `001c0000000000000044d5f2c11cbc02c8000000000c0100020001fb`
+To find your shutter codes, you need to capture the binary messages from your phone.
+
+### Option A: Cloud Sniffing (Easiest)
+1. **Turn off WiFi on your phone** (use 4G/5G mobile data). This forces the app to use the cloud MQTT broker.
+2. Connect **MQTT X** to `iot.neocontrolglobal.com:9420`.
+3. Use credentials: `NM8Y6tUQ9SZcp6bx` / `LFuBH4hsVnbBC98n` (SSL enabled).
+4. Subscribe to `neo/conn/+/app`.
+5. Press a button in the **inteO** app and copy the **Hex** message.
+
+### Option B: Local Sniffing (LAN)
+If you want to sniff while on the same WiFi as the gateway, use the provided `udp_sniffer.py` tool:
+1. Run `python udp_sniffer.py` on your computer.
+2. Press a button in the **inteO** app.
+3. The hex payload will appear directly in your terminal!
 
 ---
 *Disclaimer: This integration is not officially affiliated with Somfy or Neocontrol. Use at your own risk.*
