@@ -181,7 +181,7 @@ class NeocontrolOptionsFlowHandler(config_entries.OptionsFlow):
         """Main options menu."""
         return self.async_show_menu(
             step_id="user",
-            menu_options=["add_shutter", "remove_shutter", "finish"]
+            menu_options=["add_shutter", "edit_shutter", "remove_shutter", "finish"]
         )
 
     async def async_step_add_shutter(self, user_input=None):
@@ -206,10 +206,46 @@ class NeocontrolOptionsFlowHandler(config_entries.OptionsFlow):
             }),
         )
 
+    async def async_step_edit_shutter(self, user_input=None):
+        """Select a shutter to edit."""
+        if user_input is not None:
+            self._editing_name = user_input["name"]
+            return await self.async_step_edit_shutter_form()
+
+        shutter_names = [s[CONF_NAME] for s in self.shutters]
+        return self.async_show_form(
+            step_id="edit_shutter",
+            data_schema=vol.Schema({
+                vol.Required("name"): vol.In(shutter_names),
+            }),
+        )
+
+    async def async_step_edit_shutter_form(self, user_input=None):
+        """Edit the selected shutter's details."""
+        shutter = next((s for s in self.shutters if s[CONF_NAME] == self._editing_name), None)
+        
+        if user_input is not None:
+            # Update the shutter in the list
+            if shutter:
+                shutter[CONF_NAME] = user_input[CONF_NAME]
+                shutter[CONF_PAYLOAD_OPEN] = user_input[CONF_PAYLOAD_OPEN]
+                shutter[CONF_PAYLOAD_CLOSE] = user_input[CONF_PAYLOAD_CLOSE]
+                shutter[CONF_PAYLOAD_STOP] = user_input.get(CONF_PAYLOAD_STOP, "")
+            return await self.async_step_user()
+
+        return self.async_show_form(
+            step_id="edit_shutter_form",
+            data_schema=vol.Schema({
+                vol.Required(CONF_NAME, default=shutter[CONF_NAME]): str,
+                vol.Required(CONF_PAYLOAD_OPEN, default=shutter[CONF_PAYLOAD_OPEN]): str,
+                vol.Required(CONF_PAYLOAD_CLOSE, default=shutter[CONF_PAYLOAD_CLOSE]): str,
+                vol.Optional(CONF_PAYLOAD_STOP, default=shutter.get(CONF_PAYLOAD_STOP, "")): str,
+            }),
+        )
+
     async def async_step_remove_shutter(self, user_input=None):
         """Remove a shutter."""
         if user_input is not None:
-            # Simple removal logic
             name_to_remove = user_input["name"]
             self.shutters = [s for s in self.shutters if s[CONF_NAME] != name_to_remove]
             return await self.async_step_user()
@@ -223,7 +259,8 @@ class NeocontrolOptionsFlowHandler(config_entries.OptionsFlow):
         )
 
     async def async_step_finish(self, user_input=None):
-        """Save the options."""
-        # Note: we update the ConfigEntry data directly
+        """Save the options and reload the entry."""
         self.data[CONF_SHUTTERS] = self.shutters
-        return self.async_create_entry(title="", data=self.data)
+        self.hass.config_entries.async_update_entry(self.config_entry, data=self.data)
+        await self.hass.config_entries.async_reload(self.config_entry.entry_id)
+        return self.async_create_entry(title="", data={})

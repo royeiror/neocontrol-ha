@@ -1,7 +1,7 @@
 {
   "domain": "neocontrol",
   "name": "Somfy / Neocontrol Gateway",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "documentation": "https://github.com/royeiror/neocontrol-ha",
   "dependencies": [],
   "codeowners": ["@royeiror"],

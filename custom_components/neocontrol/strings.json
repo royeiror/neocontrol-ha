@@ -46,12 +46,27 @@
         "menu": {
             "user": {
                 "title": "Manage Shutters",
-                "description": "What would you like to do?"
+                "description": "Choose an action to modify your shutter setup."
             }
         },
         "step": {
             "add_shutter": {
                 "title": "Add New Shutter",
+                "data": {
+                    "name": "Shutter Name",
+                    "payload_open": "Hex Payload for OPEN",
+                    "payload_close": "Hex Payload for CLOSE",
+                    "payload_stop": "Hex Payload for STOP (Optional)"
+                }
+            },
+            "edit_shutter": {
+                "title": "Select Shutter to Edit",
+                "data": {
+                    "name": "Shutter Name"
+                }
+            },
+            "edit_shutter_form": {
+                "title": "Edit Shutter Details",
                 "data": {
                     "name": "Shutter Name",
                     "payload_open": "Hex Payload for OPEN",
@@ -67,7 +82,7 @@
             },
             "finish": {
                 "title": "Save Changes",
-                "description": "Click Submit to save your updated shutter list."
+                "description": "Click Submit to save and reload the integration."
             }
         }
     }
