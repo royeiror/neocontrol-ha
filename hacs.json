@@ -1,0 +1,5 @@
+{
+  "name": "Neocontrol / Somfy Gateway",
+  "iot_class": "cloud_push",
+  "render_readme": true
+}

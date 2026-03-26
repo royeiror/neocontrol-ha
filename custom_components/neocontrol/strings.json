@@ -1,0 +1,66 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Neocontrol Gateway Setup",
+                "description": "Enter the MAC address of your Inteo Station V2 gateway.",
+                "data": {
+                    "box_mac": "Gateway MAC Address (e.g. 44D5F2C11CBC)"
+                }
+            },
+            "shutter": {
+                "title": "Add a Shutter",
+                "description": "Enter the details for Shutter #{count}.",
+                "data": {
+                    "name": "Shutter Name",
+                    "payload_open": "Hex Payload for OPEN",
+                    "payload_close": "Hex Payload for CLOSE",
+                    "payload_stop": "Hex Payload for STOP (Optional)"
+                }
+            },
+            "add_another": {
+                "title": "Shutter Added",
+                "description": "Successfully added {count} shutters. Do you want to add another one?",
+                "data": {
+                    "add_another": "Add another shutter"
+                }
+            }
+        },
+        "error": {
+            "invalid_mac": "Invalid MAC address format (must be 12 hex characters)",
+            "no_shutters": "You must add at least one shutter before clicking Done."
+        },
+        "abort": {
+            "already_configured": "This gateway is already configured."
+        }
+    },
+    "options": {
+        "menu": {
+            "user": {
+                "title": "Manage Shutters",
+                "description": "What would you like to do?"
+            }
+        },
+        "step": {
+            "add_shutter": {
+                "title": "Add New Shutter",
+                "data": {
+                    "name": "Shutter Name",
+                    "payload_open": "Hex Payload for OPEN",
+                    "payload_close": "Hex Payload for CLOSE",
+                    "payload_stop": "Hex Payload for STOP (Optional)"
+                }
+            },
+            "remove_shutter": {
+                "title": "Remove Shutter",
+                "data": {
+                    "name": "Select shutter to remove"
+                }
+            },
+            "finish": {
+                "title": "Save Changes",
+                "description": "Click Submit to save your updated shutter list."
+            }
+        }
+    }
+}
