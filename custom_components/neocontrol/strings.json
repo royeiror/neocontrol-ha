@@ -44,21 +44,12 @@
         }
     },
     "options": {
-        "menu": {
-            "user": {
-                "title": "Manage Shutters",
-                "description": "Choose an action to modify your shutter setup."
-            }
-        },
         "step": {
             "user": {
                 "title": "Manage Shutters",
                 "description": "Choose an action to modify your shutter setup.",
-                "menu_options": {
-                    "add_shutter": "Add a NEW Shutter",
-                    "edit_shutter": "Edit an EXISTING Shutter",
-                    "remove_shutter": "Remove a Shutter",
-                    "finish": "💾 SAVE and Restart Integration"
+                "data": {
+                    "action": "What would you like to do?"
                 }
             },
             "add_shutter": {

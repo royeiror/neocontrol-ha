@@ -215,10 +215,28 @@ class NeocontrolOptionsFlowHandler(config_entries.OptionsFlow):
         return await self.async_step_user()
 
     async def async_step_user(self, user_input=None):
-        """Main options menu."""
-        return self.async_show_menu(
+        """Main options menu (Form-based for 2025 compatibility)."""
+        if user_input is not None:
+            action = user_input["action"]
+            if action == "add":
+                return await self.async_step_add_shutter()
+            if action == "edit":
+                return await self.async_step_edit_shutter()
+            if action == "remove":
+                return await self.async_step_remove_shutter()
+            if action == "finish":
+                return await self.async_step_finish()
+
+        return self.async_show_form(
             step_id="user",
-            menu_options=["add_shutter", "edit_shutter", "remove_shutter", "finish"]
+            data_schema=vol.Schema({
+                vol.Required("action", default="finish"): vol.In({
+                    "add": "➕ Add a NEW Shutter",
+                    "edit": "✏️ Edit an EXISTING Shutter",
+                    "remove": "🗑️ Remove a Shutter",
+                    "finish": "💾 SAVE and Restart"
+                }),
+            }),
         )
 
     async def async_step_add_shutter(self, user_input=None):
