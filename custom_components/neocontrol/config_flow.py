@@ -36,13 +36,20 @@ class NeocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if gateway_id == "new":
                 return await self.async_step_new_gateway()
             
-            # Use an existing gateway
-            self.data[CONF_BOX_MAC] = gateway_id
-            await self.async_set_unique_id(gateway_id)
-            return await self.async_step_shutter()
+            # Use an existing gateway. gateway_id is the unique_id or entry_id
+            entry = next((e for e in entries if e.entry_id == gateway_id or e.unique_id == gateway_id), None)
+            if entry:
+                self.data[CONF_BOX_MAC] = entry.data.get(CONF_BOX_MAC, entry.unique_id)
+                await self.async_set_unique_id(self.data[CONF_BOX_MAC])
+                return await self.async_step_shutter()
 
         # Build selection schema
-        selection = {e.unique_id: f"{e.title} ({e.unique_id})" for e in entries if e.unique_id}
+        selection = {}
+        for e in entries:
+            # Fallback for label: unique_id -> data[mac] -> entry_id
+            mac = e.unique_id or e.data.get(CONF_BOX_MAC) or e.entry_id
+            selection[e.entry_id] = f"{e.title} ({mac})"
+        
         selection["new"] = "Add a NEW Gateway..."
         
         return self.async_show_form(
