@@ -44,16 +44,20 @@
         }
     },
     "options": {
-        "menu": {
+        "step": {
             "user": {
                 "title": "Manage Shutters",
-                "description": "Choose an action to modify your shutter setup."
-            }
-        },
-        "step": {
+                "description": "Choose an action to modify your shutter setup.",
+                "menu_options": {
+                    "add_shutter": "Add a NEW Shutter",
+                    "edit_shutter": "Edit an EXISTING Shutter",
+                    "remove_shutter": "Remove a Shutter",
+                    "finish": "💾 SAVE and Restart Integration"
+                }
+            },
             "add_shutter": {
                 "title": "Add New Shutter",
-                "description": "{test_result}",
+                "description": "{test_result}\nEnter the hex payloads for your shutter commands.",
                 "data": {
                     "name": "Shutter Name",
                     "payload_open": "Hex Payload for OPEN",

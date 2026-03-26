@@ -201,7 +201,7 @@ class NeocontrolOptionsFlowHandler(config_entries.OptionsFlow):
 
     def __init__(self, config_entry):
         """Initialize."""
-        self.config_entry = config_entry
+        self._config_entry = config_entry
         self.data = dict(config_entry.data)
         self.shutters = list(self.data.get(CONF_SHUTTERS, []))
         self._editing_index = None
@@ -343,6 +343,6 @@ class NeocontrolOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_finish(self, user_input=None):
         """Save the options and reload the entry."""
         self.data[CONF_SHUTTERS] = self.shutters
-        self.hass.config_entries.async_update_entry(self.config_entry, data=self.data)
-        await self.hass.config_entries.async_reload(self.config_entry.entry_id)
+        self.hass.config_entries.async_update_entry(self._config_entry, data=self.data)
+        await self.hass.config_entries.async_reload(self._config_entry.entry_id)
         return self.async_create_entry(title="", data={})
