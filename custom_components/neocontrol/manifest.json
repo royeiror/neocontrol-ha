@@ -1,11 +1,11 @@
 {
   "domain": "neocontrol",
   "name": "Somfy / Neocontrol Gateway",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "documentation": "https://github.com/royeiror/neocontrol-ha",
   "dependencies": [],
   "codeowners": ["@royeiror"],
   "requirements": ["paho-mqtt>=1.6.1"],
   "config_flow": true,
-  "iot_class": "cloud_push"
+  "iot_class": "local_push"
 }
