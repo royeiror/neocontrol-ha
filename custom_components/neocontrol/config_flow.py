@@ -24,57 +24,56 @@ class NeocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self.shutters = []
 
     async def async_step_user(self, user_input=None):
-        """Handle the initial step (Gateway MAC)."""
-        errors = {}
+        """Initial choice: select existing gateway or add new."""
         entries = self.hass.config_entries.async_entries(DOMAIN)
         
+        if not entries:
+            # No existing gateways, go direct to new MAC entry
+            return await self.async_step_new_gateway()
+
         if user_input is not None:
-            # 1. Did the user select an existing gateway from the dropdown?
-            existing_gateway = user_input.get("existing_gateway", "new")
+            gateway_id = user_input.get("gateway_id")
+            if gateway_id == "new":
+                return await self.async_step_new_gateway()
             
-            if existing_gateway != "new":
-                mac = existing_gateway
-            else:
-                # 2. Process a new MAC address
-                mac_input = user_input.get(CONF_BOX_MAC)
-                if not mac_input:
-                    errors[CONF_BOX_MAC] = "no_mac"
-                    return self.async_show_form(
-                        step_id="user",
-                        data_schema=vol.Schema(fields),
-                        errors=errors,
-                    )
-                mac = mac_input.replace(":", "").replace("-", "").upper()
-                if len(mac) != 12:
-                    errors[CONF_BOX_MAC] = "invalid_mac"
-                    return self.async_show_form(
-                        step_id="user",
-                        data_schema=vol.Schema(fields),
-                        errors=errors,
-                    )
-            
-            # Successfully got a MAC. Store it and proceed.
-            self.data[CONF_BOX_MAC] = mac
-            
-            # Check if this MAC is already configured (for later logic)
-            await self.async_set_unique_id(mac)
-            
+            # Use an existing gateway
+            self.data[CONF_BOX_MAC] = gateway_id
+            await self.async_set_unique_id(gateway_id)
             return await self.async_step_shutter()
 
-        # Build schema
-        fields = {}
-        if entries:
-            # If we have existing entries, show a dropdown
-            existing_macs = {e.unique_id: e.unique_id for e in entries if e.unique_id}
-            existing_macs["new"] = "Add a New Gateway..."
-            fields[vol.Optional("existing_gateway", default="new")] = vol.In(existing_macs)
-        
-        # MAC is optional in the schema but we validate it manually if existing_gateway == "new"
-        fields[vol.Optional(CONF_BOX_MAC)] = str
+        # Build selection schema
+        selection = {e.unique_id: f"{e.title} ({e.unique_id})" for e in entries if e.unique_id}
+        selection["new"] = "Add a NEW Gateway..."
         
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema(fields),
+            data_schema=vol.Schema({
+                vol.Required("gateway_id", default="new"): vol.In(selection),
+            }),
+        )
+
+    async def async_step_new_gateway(self, user_input=None):
+        """Step to enter a new Gateway MAC."""
+        errors = {}
+        if user_input is not None:
+            mac_input = user_input.get(CONF_BOX_MAC)
+            if not mac_input:
+                errors[CONF_BOX_MAC] = "no_mac"
+            else:
+                mac = mac_input.replace(":", "").replace("-", "").upper()
+                if len(mac) != 12:
+                    errors[CONF_BOX_MAC] = "invalid_mac"
+                else:
+                    await self.async_set_unique_id(mac)
+                    self._abort_if_unique_id_configured()
+                    self.data[CONF_BOX_MAC] = mac
+                    return await self.async_step_shutter()
+
+        return self.async_show_form(
+            step_id="new_gateway",
+            data_schema=vol.Schema({
+                vol.Required(CONF_BOX_MAC): str,
+            }),
             errors=errors,
         )
 

@@ -2,7 +2,14 @@
     "config": {
         "step": {
             "user": {
-                "title": "Neocontrol Gateway Setup",
+                "title": "Select Gateway",
+                "description": "Select an existing gateway to add more shutters, or set up a new one.",
+                "data": {
+                    "gateway_id": "Choose Gateway"
+                }
+            },
+            "new_gateway": {
+                "title": "New Gateway Setup",
                 "description": "Enter the MAC address of your Inteo Station V2 gateway.",
                 "data": {
                     "box_mac": "Gateway MAC Address (e.g. 44D5F2C11CBC)"
