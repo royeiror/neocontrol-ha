@@ -220,6 +220,8 @@ class NeocontrolOptionsFlowHandler(config_entries.OptionsFlow):
             action = user_input["action"]
             if action == "add":
                 return await self.async_step_add_shutter()
+            if action == "quick_add":
+                return await self.async_step_quick_add()
             if action == "edit":
                 return await self.async_step_edit_shutter()
             if action == "remove":
@@ -231,12 +233,51 @@ class NeocontrolOptionsFlowHandler(config_entries.OptionsFlow):
             step_id="user",
             data_schema=vol.Schema({
                 vol.Required("action", default="finish"): vol.In({
-                    "add": "➕ Add a NEW Shutter",
+                    "add": "➕ Add a NEW Shutter (Manual)",
+                    "quick_add": "⚡ QUICK ADD (Auto-Generate by IDs)",
                     "edit": "✏️ Edit an EXISTING Shutter",
                     "remove": "🗑️ Remove a Shutter",
                     "finish": "💾 SAVE and Restart"
                 }),
             }),
+        )
+
+    async def async_step_quick_add(self, user_input=None):
+        """Bulk add shutters by ID range."""
+        errors = {}
+        if user_input is not None:
+            prefix = user_input["name_prefix"]
+            start_id = user_input["start_id"]
+            count = user_input["count"]
+            
+            # Use the canonical binary structure discovered
+            # Header + MAC + Transport/Seq + Fixed + ID + Command
+            mac = self.data[CONF_BOX_MAC]
+            base_header = f"001c00000000000000{mac}0220000000000c01000200"
+            
+            for i in range(count):
+                current_id = start_id + i
+                if current_id > 255: break
+                
+                id_hex = f"{current_id:02x}"
+                shutter = {
+                    CONF_NAME: f"{prefix} {current_id}",
+                    CONF_PAYLOAD_OPEN: f"{base_header}{id_hex}fa",
+                    CONF_PAYLOAD_CLOSE: f"{base_header}{id_hex}fb",
+                    CONF_PAYLOAD_STOP: f"{base_header}{id_hex}fc",
+                }
+                self.shutters.append(shutter)
+            
+            return await self.async_step_user()
+
+        return self.async_show_form(
+            step_id="quick_add",
+            data_schema=vol.Schema({
+                vol.Required("name_prefix", default="Shutter"): str,
+                vol.Required("start_id", default=1): vol.All(vol.Coerce(int), vol.Range(min=1, max=254)),
+                vol.Required("count", default=1): vol.All(vol.Coerce(int), vol.Range(min=1, max=20)),
+            }),
+            errors=errors,
         )
 
     async def async_step_add_shutter(self, user_input=None):

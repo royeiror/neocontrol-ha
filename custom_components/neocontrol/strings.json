@@ -52,8 +52,17 @@
                     "action": "What would you like to do?"
                 }
             },
+            "quick_add": {
+                "title": "⚡ Quick Add (Bulk)",
+                "description": "Enter the starting ID and how many shutters to generate automatically. We use the 28-byte binary pattern for your gateway.",
+                "data": {
+                    "name_prefix": "Shutter Name Prefix",
+                    "start_id": "Starting ID (typically 1, 2, 3...)",
+                    "count": "Number of shutters to add"
+                }
+            },
             "add_shutter": {
-                "title": "Add New Shutter",
+                "title": "Add New Shutter (Manual)",
                 "description": "{test_result}\nEnter the hex payloads for your shutter commands.",
                 "data": {
                     "name": "Shutter Name",
