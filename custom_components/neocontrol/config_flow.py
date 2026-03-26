@@ -26,22 +26,41 @@ class NeocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input=None):
         """Handle the initial step (Gateway MAC)."""
         errors = {}
+        entries = self.hass.config_entries.async_entries(DOMAIN)
+        
         if user_input is not None:
-            # Basic validation for MAC address
+            # 1. Did the user select an existing gateway from the dropdown?
+            if "existing_gateway" in user_input and user_input["existing_gateway"] != "new":
+                # We can't jump directly into another entry's Options Flow easily from here, 
+                # but we can tell them exactly what to do.
+                return self.async_abort(
+                    reason="already_configured", 
+                    description_placeholders={"mac": user_input["existing_gateway"]}
+                )
+
+            # 2. Process a new MAC address
             mac = user_input[CONF_BOX_MAC].replace(":", "").replace("-", "").upper()
             if len(mac) != 12:
-                errors["base"] = "invalid_mac"
+                errors[CONF_BOX_MAC] = "invalid_mac"
             else:
                 await self.async_set_unique_id(mac)
                 self._abort_if_unique_id_configured()
                 self.data[CONF_BOX_MAC] = mac
                 return await self.async_step_shutter()
 
+        # Build schema
+        fields = {}
+        if entries:
+            # If we have existing entries, show a dropdown
+            existing_macs = {e.unique_id: e.unique_id for e in entries if e.unique_id}
+            existing_macs["new"] = "Add a New Gateway..."
+            fields[vol.Optional("existing_gateway", default="new")] = vol.In(existing_macs)
+        
+        fields[vol.Required(CONF_BOX_MAC)] = str
+        
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema({
-                vol.Required(CONF_BOX_MAC): str,
-            }),
+            data_schema=vol.Schema(fields),
             errors=errors,
         )
 

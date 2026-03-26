@@ -30,14 +30,20 @@ def start_sniffer():
 
     _LOGGER.info(f"--- Neocontrol UDP Sniffer Active ---")
     _LOGGER.info(f"Listening on port {UDP_PORT}...")
+    _LOGGER.info(f"IMPORTANT: Your computer and phone MUST be on the same WiFi network (Subnet).")
+    _LOGGER.info(f"If your phone is on 4G/5G, this sniffer will NOT see any traffic.")
+    _LOGGER.info(f"If you see nothing, check your Windows Firewall is not blocking port 9325.")
     _LOGGER.info(f"Press Ctrl+C to stop.\n")
 
     try:
         while True:
-            data, addr = sock.recvfrom(1024)
+            # Use a slightly longer timeout and recvfrom to see where data comes from
+            data, addr = sock.recvfrom(2048)
             if len(data) >= 28:
                 hex_payload = data.hex()
                 _LOGGER.info(f"[{addr[0]}] Captured Payload: {hex_payload}")
+            else:
+                _LOGGER.debug(f"[{addr[0]}] Received short packet of {len(data)} bytes")
     except KeyboardInterrupt:
         _LOGGER.info("\nSniffer stopped.")
     finally:
