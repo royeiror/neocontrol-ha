@@ -3,6 +3,10 @@ from homeassistant import config_entries
 from homeassistant.core import callback
 import homeassistant.helpers.config_validation as cv
 
+import logging
+
+_LOGGER = logging.getLogger(__name__)
+
 from .const import (
     DOMAIN,
     CONF_BOX_MAC,
